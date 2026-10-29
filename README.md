@@ -4,7 +4,7 @@ A [GitHub CLI](https://cli.github.com/) extension that gathers your pull request
 
 ```
 $ gh tally --since fri
-@me の PR: 12 本（2026-10-23 00:00 〜 今）
+12 PRs by @me (2026-10-23 00:00 to now)
 
 ## owner/api (3)
   #101    merged  approved:1   -  Add retry to the webhook handler
