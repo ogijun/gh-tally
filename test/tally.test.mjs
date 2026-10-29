@@ -49,7 +49,7 @@ test("parseSince: N 日前・日付・today", () => {
 
 test("classifyRuns: 同じ workflow に成功があれば、失敗・取消は見かけの赤", () => {
   const runs = [
-    { id: 1, name: "Test", workflow_id: 10, event: "push", status: "completed", conclusion: "failure" },
+    { id: 1, name: "Test", workflow_id: 10, event: "push", status: "completed", conclusion: "cancelled" },
     { id: 2, name: "Test", workflow_id: 10, event: "pull_request", status: "completed", conclusion: "success" },
     { id: 3, name: "Lint", workflow_id: 11, status: "completed", conclusion: "success" },
   ];
@@ -175,4 +175,21 @@ test("searchQuery: --by maps to the search qualifier", () => {
     searchQuery("@me", since, new Date("2026-10-27T00:00:00Z"), "o", "merged"),
     "is:pr author:@me merged:2026-10-26T00:00:00.000Z..2026-10-27T00:00:00.000Z user:o",
   );
+});
+
+test("classifyRuns: same workflow and event, the newer run cancelled and an older one succeeded → looks red; re-run the cancelled one", () => {
+  const runs = [
+    { id: 40637690930, workflow_id: 1, event: "pull_request", run_number: 10, status: "completed", conclusion: "success" },
+    { id: 40637691891, workflow_id: 1, event: "pull_request", run_number: 11, status: "completed", conclusion: "cancelled" },
+    { id: 9, workflow_id: 2, event: "pull_request", run_number: 3, status: "completed", conclusion: "success" },
+  ];
+  assert.deepEqual(classifyRuns(runs), { state: "stale-red", rerunIds: [40637691891] });
+});
+
+test("classifyRuns: a newest failure stays red even if an earlier run succeeded", () => {
+  const runs = [
+    { id: 1, workflow_id: 1, event: "pull_request", run_number: 1, status: "completed", conclusion: "success" },
+    { id: 2, workflow_id: 1, event: "pull_request", run_number: 2, status: "completed", conclusion: "failure" },
+  ];
+  assert.deepEqual(classifyRuns(runs), { state: "red", rerunIds: [] });
 });

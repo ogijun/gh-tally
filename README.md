@@ -46,7 +46,7 @@ All in your local timezone. The default is `--since 7d`. `--until` includes the 
 
 With the default `--by created`, a PR opened before `--since` and merged inside the window is not listed; use `--by updated` or `--by merged` for that. GitHub search returns at most 1,000 results; `gh tally` warns when the list is cut short.
 
-`--rerun` re-runs, with `gh run rerun --failed`, only the newest run of each workflow and event on the PR's head commit, and only when that run looks red: it failed or was cancelled while the same workflow succeeded on the same commit, or it was cancelled with no success at all. Older duplicate runs are never re-run. Runs that cannot be re-run are reported, not counted.
+`--rerun` re-runs, with `gh run rerun --failed`, the newest run of each workflow and event on the PR's head commit when that run was cancelled. A cancelled newest run of a workflow that also succeeded on the same commit is marked `~`: this is the usual result of two runs starting at once (for example a stacked branch and its base being pushed together) and concurrency cancelling one of them. A newest run that failed is always shown as `✗` and is never re-run by `gh tally`. Runs that cannot be re-run are reported, not counted.
 
 ## Columns
 
@@ -54,7 +54,7 @@ With the default `--by created`, a PR opened before `--since` and merged inside 
 |---|---|
 | state | `open` / `draft` / `merged` / `closed` / `error` (the PR could not be fetched) |
 | reviews | latest review per reviewer: `approved:N`, `changes:N`, or `-` |
-| CI | `✓` green, `✗` failing, `~` looks red (duplicate run cancelled), `…` running, `⊘` cancelled only, `-` none or not checked (merged and closed PRs) |
+| CI | `✓` green, `✗` failing, `~` looks red (a duplicate run was cancelled; the workflow succeeded on the same commit), `…` running, `⊘` cancelled only, `-` none or not checked (merged and closed PRs) |
 | extras | `conflict` (open PRs only), `↑#N` stacked on PR #N |
 
 ## Development
