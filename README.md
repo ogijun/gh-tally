@@ -29,8 +29,11 @@ Requires Node.js 20 or later.
 ## Usage
 
 ```
-gh tally [--since <when>] [--until <when>] [--author <user>] [--repo <owner[/repo]>] [--rerun] [--json]
+gh tally [--since <when>] [--until <when>] [--by created|updated|merged] [--author <user>] [--repo <owner[/repo]>] [--rerun] [--json]
+gh tally <number>... [-R owner/repo]
 ```
+
+`--by` chooses which date the window applies to: `created` (default), `updated` (anything touched recently, including rebases and reviews), or `merged`. Giving PR numbers skips the date window and looks at those PRs in one repository (default: the current one).
 
 `<when>` is one of:
 
@@ -41,7 +44,7 @@ gh tally [--since <when>] [--until <when>] [--author <user>] [--repo <owner[/rep
 
 All in your local timezone. The default is `--since 7d`. `--until` includes the whole day you name (`--until fri` runs to the end of Friday).
 
-PRs are selected by their creation time, so a PR opened before `--since` and merged inside the window is not listed. GitHub search returns at most 1,000 results; `gh tally` warns when the list is cut short.
+With the default `--by created`, a PR opened before `--since` and merged inside the window is not listed; use `--by updated` or `--by merged` for that. GitHub search returns at most 1,000 results; `gh tally` warns when the list is cut short.
 
 `--rerun` re-runs, with `gh run rerun --failed`, only the newest run of each workflow and event on the PR's head commit, and only when that run looks red: it failed or was cancelled while the same workflow succeeded on the same commit, or it was cancelled with no success at all. Older duplicate runs are never re-run. Runs that cannot be re-run are reported, not counted.
 

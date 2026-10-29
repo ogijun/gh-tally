@@ -10,6 +10,7 @@ import {
   renderRepo,
   formatLocal,
   parseUntil,
+  searchQuery,
 } from "../lib/tally.mjs";
 
 test("parseArgs: 既定値とフラグ", () => {
@@ -21,6 +22,8 @@ test("parseArgs: 既定値とフラグ", () => {
     rerun: false,
     json: false,
     help: false,
+    by: "created",
+    numbers: [],
   });
   const o = parseArgs(["--since", "fri", "--repo", "o/r", "--rerun", "--json"]);
   assert.equal(o.since, "fri");
@@ -154,4 +157,22 @@ test("stackParents: fork の head は親にしない", () => {
     { number: 2, base: "main", head: "feat", headRepo: "o/r", baseRepo: "o/r" },
   ];
   assert.deepEqual(stackParents(prs), {});
+});
+
+test("parseArgs: --by selects the date field; numbers are PR numbers", () => {
+  const o = parseArgs(["5249", "5250", "--by", "updated", "-R", "o/r"]);
+  assert.deepEqual(o.numbers, [5249, 5250]);
+  assert.equal(o.by, "updated");
+  assert.equal(o.repo, "o/r");
+  assert.equal(parseArgs([]).by, "created");
+  assert.throws(() => parseArgs(["--by", "closed"]));
+});
+
+test("searchQuery: --by maps to the search qualifier", () => {
+  const since = new Date("2026-10-26T00:00:00Z");
+  assert.equal(searchQuery("@me", since, null, null, "updated"), "is:pr author:@me updated:>=2026-10-26T00:00:00.000Z");
+  assert.equal(
+    searchQuery("@me", since, new Date("2026-10-27T00:00:00Z"), "o", "merged"),
+    "is:pr author:@me merged:2026-10-26T00:00:00.000Z..2026-10-27T00:00:00.000Z user:o",
+  );
 });
