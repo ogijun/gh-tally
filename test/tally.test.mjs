@@ -11,6 +11,8 @@ import {
   formatLocal,
   parseUntil,
   searchQuery,
+  pickStackParent,
+  leftoverCancelled,
 } from "../lib/tally.mjs";
 
 test("parseArgs: 既定値とフラグ", () => {
@@ -192,4 +194,23 @@ test("classifyRuns: a newest failure stays red even if an earlier run succeeded"
     { id: 2, workflow_id: 1, event: "pull_request", run_number: 2, status: "completed", conclusion: "failure" },
   ];
   assert.deepEqual(classifyRuns(runs), { state: "red", rerunIds: [] });
+});
+
+test("pickStackParent: the open PR in the same repo whose head is our base", () => {
+  const candidates = [
+    { number: 9, state: "closed", head: { repo: { full_name: "o/r" } } },
+    { number: 7, state: "open", head: { repo: { full_name: "o/r" } } },
+  ];
+  assert.equal(pickStackParent(candidates, "o/r", 5), 7);
+  assert.equal(pickStackParent([], "o/r", 5), null);
+  assert.equal(pickStackParent([{ number: 5, state: "open", head: { repo: { full_name: "o/r" } } }], "o/r", 5), null);
+});
+
+test("leftoverCancelled: cancelled runs older than a success in the same workflow and event", () => {
+  const runs = [
+    { id: 1, workflow_id: 1, event: "pull_request", run_number: 1, status: "completed", conclusion: "cancelled" },
+    { id: 2, workflow_id: 1, event: "pull_request", run_number: 2, status: "completed", conclusion: "success" },
+    { id: 3, workflow_id: 2, event: "pull_request", run_number: 1, status: "completed", conclusion: "success" },
+  ];
+  assert.deepEqual(leftoverCancelled(runs), [1]);
 });

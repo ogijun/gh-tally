@@ -48,6 +48,8 @@ With the default `--by created`, a PR opened before `--since` and merged inside 
 
 `--rerun` re-runs, with `gh run rerun --failed`, the newest run of each workflow and event on the PR's head commit when that run was cancelled. A cancelled newest run of a workflow that also succeeded on the same commit is marked `~`: this is the usual result of two runs starting at once (for example a stacked branch and its base being pushed together) and concurrency cancelling one of them. A newest run that failed is always shown as `✗` and is never re-run by `gh tally`. Runs that cannot be re-run are reported, not counted.
 
+An older cancelled run whose workflow then succeeded is not re-run, because the check already passed. GitHub still shows it grey on the PR page; `gh tally` lists such PRs at the end.
+
 ## Columns
 
 | Column | Values |
@@ -55,7 +57,7 @@ With the default `--by created`, a PR opened before `--since` and merged inside 
 | state | `open` / `draft` / `merged` / `closed` / `error` (the PR could not be fetched) |
 | reviews | latest review per reviewer: `approved:N`, `changes:N`, or `-` |
 | CI | `✓` green, `✗` failing, `~` looks red (a duplicate run was cancelled; the workflow succeeded on the same commit), `…` running, `⊘` cancelled only, `-` none or not checked (merged and closed PRs) |
-| extras | `conflict` (open PRs only), `↑#N` stacked on PR #N |
+| extras | `conflict` (open PRs only), `↑#N` stacked on PR #N (also found when #N is not in the list; protected branches such as `main` are never treated as a stack) |
 
 ## Development
 
