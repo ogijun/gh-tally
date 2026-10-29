@@ -9,6 +9,7 @@ import {
   duplicateTitles,
   renderRepo,
   formatLocal,
+  parseUntil,
 } from "../lib/tally.mjs";
 
 test("parseArgs: 既定値とフラグ", () => {
@@ -45,8 +46,8 @@ test("parseSince: N 日前・日付・today", () => {
 
 test("classifyRuns: 同じ workflow に成功があれば、失敗・取消は見かけの赤", () => {
   const runs = [
-    { id: 1, name: "Test", workflow_id: 10, status: "completed", conclusion: "failure" },
-    { id: 2, name: "Test", workflow_id: 10, status: "completed", conclusion: "success" },
+    { id: 1, name: "Test", workflow_id: 10, event: "push", status: "completed", conclusion: "failure" },
+    { id: 2, name: "Test", workflow_id: 10, event: "pull_request", status: "completed", conclusion: "success" },
     { id: 3, name: "Lint", workflow_id: 11, status: "completed", conclusion: "success" },
   ];
   assert.deepEqual(classifyRuns(runs), { state: "stale-red", rerunIds: [1] });
@@ -110,4 +111,47 @@ test("renderRepo: 1 行に状態・レビュー・CI・親・題名", () => {
 
 test("formatLocal: 手元の時刻を YYYY-MM-DD HH:MM で", () => {
   assert.equal(formatLocal(new Date(2026, 9, 23, 0, 5)), "2026-10-23 00:05");
+});
+
+test("parseArgs: 値が要るフラグに値が無ければエラー", () => {
+  assert.throws(() => parseArgs(["--since"]));
+  assert.throws(() => parseArgs(["--since", "--json"]));
+});
+
+test("parseSince: 曜日は完全な名前か 3 文字だけ。存在しない日付はエラー", () => {
+  const now = new Date(2026, 9, 29, 15, 0);
+  assert.deepEqual(parseSince("friday", now), new Date(2026, 9, 23, 0, 0));
+  assert.throws(() => parseSince("monkey", now));
+  assert.throws(() => parseSince("2026-02-31", now));
+});
+
+test("parseUntil: 日付・曜日・today はその日の終わり（翌日 0 時）", () => {
+  const now = new Date(2026, 9, 29, 15, 0);
+  assert.deepEqual(parseUntil("2026-10-25", now), new Date(2026, 9, 26, 0, 0));
+  assert.deepEqual(parseUntil("fri", now), new Date(2026, 9, 24, 0, 0));
+});
+
+test("classifyRuns: 同じ workflow・event では最新の run だけを見る。最新が成功なら緑", () => {
+  const runs = [
+    { id: 1, workflow_id: 10, event: "pull_request", run_number: 1, status: "completed", conclusion: "failure" },
+    { id: 2, workflow_id: 10, event: "pull_request", run_number: 2, status: "completed", conclusion: "success" },
+  ];
+  assert.deepEqual(classifyRuns(runs), { state: "green", rerunIds: [] });
+});
+
+test("classifyRuns: 最新が失敗で、同じ workflow の別 event に成功があれば見かけの赤。再実行は最新の 1 本だけ", () => {
+  const runs = [
+    { id: 1, workflow_id: 10, event: "push", run_number: 1, status: "completed", conclusion: "cancelled" },
+    { id: 3, workflow_id: 10, event: "push", run_number: 3, status: "completed", conclusion: "cancelled" },
+    { id: 2, workflow_id: 10, event: "pull_request", run_number: 2, status: "completed", conclusion: "success" },
+  ];
+  assert.deepEqual(classifyRuns(runs), { state: "stale-red", rerunIds: [3] });
+});
+
+test("stackParents: fork の head は親にしない", () => {
+  const prs = [
+    { number: 1, base: "main", head: "main", headRepo: "fork/r", baseRepo: "o/r" },
+    { number: 2, base: "main", head: "feat", headRepo: "o/r", baseRepo: "o/r" },
+  ];
+  assert.deepEqual(stackParents(prs), {});
 });

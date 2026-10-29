@@ -39,15 +39,17 @@ gh tally [--since <when>] [--until <when>] [--author <user>] [--repo <owner[/rep
 - `today`
 - `YYYY-MM-DD`
 
-All in your local timezone. The default is `--since 7d`.
+All in your local timezone. The default is `--since 7d`. `--until` includes the whole day you name (`--until fri` runs to the end of Friday).
 
-`--rerun` re-runs, with `gh run rerun --failed`, the runs that only look red (a failed or cancelled run of a workflow that also has a successful run on the same commit) and runs that were only cancelled.
+PRs are selected by their creation time, so a PR opened before `--since` and merged inside the window is not listed. GitHub search returns at most 1,000 results; `gh tally` warns when the list is cut short.
+
+`--rerun` re-runs, with `gh run rerun --failed`, only the newest run of each workflow and event on the PR's head commit, and only when that run looks red: it failed or was cancelled while the same workflow succeeded on the same commit, or it was cancelled with no success at all. Older duplicate runs are never re-run. Runs that cannot be re-run are reported, not counted.
 
 ## Columns
 
 | Column | Values |
 |---|---|
-| state | `open` / `draft` / `merged` / `closed` |
+| state | `open` / `draft` / `merged` / `closed` / `error` (the PR could not be fetched) |
 | reviews | latest review per reviewer: `approved:N`, `changes:N`, or `-` |
 | CI | `✓` green, `✗` failing, `~` looks red (duplicate run cancelled), `…` running, `⊘` cancelled only, `-` none or not checked (merged and closed PRs) |
 | extras | `conflict` (open PRs only), `↑#N` stacked on PR #N |
