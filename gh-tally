@@ -1,0 +1,9 @@
+#!/usr/bin/env ruby
+require_relative "lib/tally"
+
+begin
+  exit GhTally.main(ARGV)
+rescue StandardError => e
+  warn "gh tally: #{e.message}"
+  exit 1
+end
